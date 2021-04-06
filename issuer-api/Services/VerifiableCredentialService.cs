@@ -12,7 +12,6 @@ using Prime.HttpClients;
 using Prime.Models.Api;
 using Microsoft.EntityFrameworkCore;
 
-// TODO should implement a queue when using webhooks
 namespace Prime.Services
 {
     public class WebhookTopic
