@@ -1,0 +1,29 @@
+//
+// MATERIAL THEME
+//
+
+@import './material-palette';
+@import '~@angular/material/theming';
+
+// Define the palettes for your theme using the Material Design palettes available in the material
+// palette.scss (imported above). For each palette, you can optionally specify a default (500),
+// lighter (100), and darker (700) hue.
+$vc-issuer-app-primary: mat-palette($vc-issuer-blue, 500);
+$vc-issuer-app-accent: mat-palette($vc-issuer-yellow, 500);
+
+// The warn palette is optional (defaults to red).
+$vc-issuer-app-warn: mat-palette($mat-red);
+
+// Create the default theme object (a Sass map containing all of the palettes).
+$vc-issuer-app-theme: mat-light-theme((
+  color: (
+    primary: $vc-issuer-app-primary,
+    accent: $vc-issuer-app-accent,
+    warn: $vc-issuer-app-warn,
+  )
+));
+
+// Include theme styles for core and each component used in your app.
+// Alternatively, you can import and @include the theme mixins for each component
+// that you are using.
+@include angular-material-theme($vc-issuer-app-theme);

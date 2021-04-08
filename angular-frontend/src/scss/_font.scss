@@ -1,0 +1,25 @@
+//
+// Theme Fonts
+//
+// Google fonts are applied in `index.html` to reduce critical request depth
+// and allow the use of preconnect, which improves the performance by reducing
+// request latency for Google fonts and icons
+
+
+//
+// Fonts Palettes
+//
+
+$fonts: (
+  header: #{"Roboto, Helvetica Neue, sans-serif"},
+  body: #{"Roboto, Helvetica Neue, sans-serif"}
+);
+
+//
+// Font Mapping Extractor
+// Gets the font from the theme fonts.
+// @use theme-font( font );
+//
+@function theme-font($font) {
+  @return map-get($fonts, $font);
+}
