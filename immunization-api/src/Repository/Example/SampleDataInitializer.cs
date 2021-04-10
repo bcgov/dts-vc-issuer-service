@@ -34,7 +34,6 @@ namespace ImmunizationApi.Repository.Example
             context.Locations.Add(loc2);
             context.SaveChanges();
 
-
             PatientEntity patient1 = new PatientEntity
             {
                 BirthDate = new System.DateTime(1957, 6, 22),

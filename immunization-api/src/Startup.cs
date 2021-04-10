@@ -13,7 +13,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 
-
 using ImmunizationApi.Repository;
 using ImmunizationApi.Repository.Example;
 using ImmunizationApi.Services;
@@ -23,6 +22,8 @@ namespace ImmunizationApi
 {
     public class Startup
     {
+        public readonly string AllowSpecificOrigins = "AllowAll";
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -36,12 +37,27 @@ namespace ImmunizationApi
             services.AddDbContext<ImmunizationDbContext>(opt => opt.UseInMemoryDatabase(databaseName: "Immunizations"));
 
             services.AddMvcCore();
-            
+
             services.AddScoped<IImmunizationRepository, ImmunizationRepository>();
             services.AddScoped<IImmunizationService, ImmunizationService>();
 
             services.AddHttpContextAccessor();
             services.AddControllers();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(
+                        AllowSpecificOrigins,
+                        builder =>
+                        {
+                            builder
+                                .WithOrigins("http://localhost:4200")
+                                .AllowAnyMethod()
+                                .AllowAnyHeader()
+                                .AllowCredentials();
+                        });
+            });
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "ImmunizationApi", Version = "v1" });
@@ -61,6 +77,7 @@ namespace ImmunizationApi
             app.UseHttpsRedirection();
 
             app.UseRouting();
+            app.UseCors(AllowSpecificOrigins);
 
             app.UseAuthorization();
 

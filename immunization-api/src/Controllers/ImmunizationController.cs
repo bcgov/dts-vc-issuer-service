@@ -96,11 +96,11 @@ namespace ImmunizationApi.Controllers
         [HttpGet] // GET  api/Immunization?patient=39393993
         [Produces("application/json")]
         //[Authorize]
-        public async Task<IActionResult> GetImmunizations(string patient)
+        public async Task<IActionResult> GetImmunizations(string patientId)
         {
             try
             {
-                IEnumerable<Immunization> immunizations = await service.GetImmunizations(patient);
+                IEnumerable<Immunization> immunizations = await service.GetImmunizations(patientId);
 
                 if (Enumerable.Count<Immunization>(immunizations) == 0)
                     return NotFound();
