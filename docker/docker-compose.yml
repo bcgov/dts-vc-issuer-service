@@ -34,7 +34,7 @@ services:
     networks:
       - dts-vc-issuer
     volumes:
-      - ../immunization-api/immunization-api/:/app
+      - ../immunization-api/src:/app
       - immunization-api-dev-bin:/app/bin
       - immunization-api-dev-obj:/app/obj
     depends_on:
