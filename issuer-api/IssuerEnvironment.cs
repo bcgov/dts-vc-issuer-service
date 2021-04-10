@@ -1,8 +1,8 @@
 using System;
 
-namespace Prime
+namespace Issuer
 {
-    public static class PrimeEnvironment
+    public static class IssuerEnvironment
     {
         public static readonly string Name = Environment.GetEnvironmentVariable("APP") ?? "local";
         public static readonly string FrontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "localhost:4200";
@@ -18,7 +18,7 @@ namespace Prime
             public static readonly string Username = System.Environment.GetEnvironmentVariable("POSTGRES_USERNAME");
             public static readonly string Db = System.Environment.GetEnvironmentVariable("POSTGRES_DB");
             public static readonly string PgPassword = System.Environment.GetEnvironmentVariable("PGPASSWORD");
-            public static readonly string ConnectionString = $"Host=db;Port=5432;Database=dts_issuer-db;Username=dbuser;Password=dbpassword;";
+            public static readonly string ConnectionString = System.Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
         }
 
         /// <summary>
@@ -26,9 +26,16 @@ namespace Prime
         /// </summary>
         public static class VerifiableCredentialApi
         {
-            public static readonly string Url = Environment.GetEnvironmentVariable("VERIFIABLE_CREDENTIAL_API_URL") ?? "https://prime-agent-admin-dev.pathfinder.gov.bc.ca/";
-            public static readonly string Key = Environment.GetEnvironmentVariable("VERIFIABLE_CREDENTIAL_API_KEY") ?? "P8ZmRJ05biXGWI1/bDtXcp1pixtWdsAqhcUJcn4S7QQ=";
-            public static readonly string WebhookKey = Environment.GetEnvironmentVariable("VERIFIABLE_CREDENTIAL_WEBHOOK_KEY") ?? "0ce755d5-1fb1-483a-ba22-439061aa8f67";
+            public static readonly string Url =  "http://agent:8024/";
+            public static readonly string Key = Environment.GetEnvironmentVariable("ISSUER_AGENT_ADMIN_API_KEY");
+        }
+
+        /// <summary>
+        /// Immunization Api
+        /// </summary>
+        public static class ImmunizationApi
+        {
+            public static readonly string Url = Environment.GetEnvironmentVariable("IMMUNIZATION_API_URL") ?? "https://test.ca";
         }
     }
 }

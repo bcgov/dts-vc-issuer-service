@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Prime.Models.Api
+namespace Issuer.Models.Api
 {
     public class ImmunizationRecordResponse
     {

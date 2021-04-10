@@ -6,22 +6,22 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
-using Prime.Models;
+using Issuer.Models;
 
-namespace Prime.HttpClients
+namespace Issuer.HttpClients
 {
     public class VerifiableCredentialClient : IVerifiableCredentialClient
     {
         private readonly HttpClient _client;
         private readonly ILogger _logger;
 
-        private static readonly string SchemaName = "vaccine";
+        private static readonly string SchemaName = "test";
         private static readonly string SchemaVersion = "1.0";
         // If schema changes, the following must be updated in all agents for each environment as the code changes are pushed so versions are the same
         // and have verifier app updated by aries team in each environment (send them schema id, if claims change send them new attributes)
         // Update the following through postman:
         // 1. Add new schema, incrementing schema version -> schema_name = vaccine
-        // 2. Create a credential definition for schema -> support_revocation = true, tag = prime
+        // 2. Create a credential definition for schema -> support_revocation = true, tag = issuer
 
         public VerifiableCredentialClient(
             HttpClient client,
@@ -220,6 +220,10 @@ namespace Prime.HttpClients
             JArray credentialDefinitionIds = (JArray)body.SelectToken("credential_definition_ids");
 
             _logger.LogInformation("GET Credential Definition IDs {@JObject}", JsonConvert.SerializeObject(body));
+            if(credentialDefinitionIds == null | credentialDefinitionIds.Count == 0)
+            {
+                throw new VerifiableCredentialApiException($"Error No credential Definition exists for schema when calling VerifiableCredentialClient::GetCredentialDefinitionAsync");
+            }
 
             return (string)body.SelectToken($"credential_definition_ids[{credentialDefinitionIds.Count - 1}]");
         }

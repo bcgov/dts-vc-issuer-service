@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
-using Prime.Models;
+using Issuer.Models;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public abstract class BaseService
     {

@@ -5,17 +5,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 
-using Prime.Models;
-using Prime.Infrastructure;
+using Issuer.Models;
+using Issuer.Infrastructure;
 using System.Reflection;
 using System.IO;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Microsoft.Extensions.Hosting;
-using Prime.Services;
-using Prime.HttpClients;
+using Issuer.Services;
+using Issuer.HttpClients;
 
-namespace Prime
+namespace Issuer
 {
     public class Startup
     {
@@ -98,8 +98,13 @@ namespace Prime
             // Clients
             services.AddHttpClient<IVerifiableCredentialClient, VerifiableCredentialClient>(client =>
             {
-                client.BaseAddress = new Uri(PrimeEnvironment.VerifiableCredentialApi.Url.EnsureTrailingSlash());
-                client.DefaultRequestHeaders.Add("x-api-key", PrimeEnvironment.VerifiableCredentialApi.Key);
+                client.BaseAddress = new Uri(IssuerEnvironment.VerifiableCredentialApi.Url.EnsureTrailingSlash());
+                client.DefaultRequestHeaders.Add("x-api-key", IssuerEnvironment.VerifiableCredentialApi.Key);
+            });
+
+            services.AddHttpClient<IImmunizationClient, ImmunizationClient>(client =>
+            {
+                client.BaseAddress = new Uri(IssuerEnvironment.ImmunizationApi.Url.EnsureTrailingSlash());
             });
         }
 
@@ -118,7 +123,7 @@ namespace Prime
             // specifying the Swagger JSON endpoint.
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "PRIME API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "ISSUER API V1");
             });
 
             ConfigureLogging(app);
@@ -139,13 +144,13 @@ namespace Prime
         protected virtual void ConfigureDatabase(IServiceCollection services)
         {
             string connectionString;
-            if (PrimeEnvironment.IsLocal)
+            if (IssuerEnvironment.IsLocal)
             {
-                connectionString = Configuration.GetConnectionString("PrimeDatabase");
+                connectionString = Configuration.GetConnectionString("IssuerDatabase");
             }
             else
             {
-                connectionString = PrimeEnvironment.Postgres.ConnectionString;
+                connectionString = IssuerEnvironment.Postgres.ConnectionString;
             }
 
             services.AddDbContext<ApiDbContext>(options =>

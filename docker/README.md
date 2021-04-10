@@ -20,7 +20,7 @@ Once started the services will be listening on localhost as follows:
 
 - `maildev`: http://localhost:8050
 
-- `db` and `wallet` postgres databases will respectively be listening on ports `5433` and `5434`.
+- `db` and `wallet` postgres databases will respectively be listening on ports `5432` and `5434`.
 
 You can always run `./manage -h` to get more information about the usage of the script, and refer to it to find values for environment variables being set and consumed by `docker-compose`.
 

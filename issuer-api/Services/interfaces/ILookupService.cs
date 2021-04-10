@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using Prime.Models.Api;
+using Issuer.Models.Api;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public interface ILookupService
     {

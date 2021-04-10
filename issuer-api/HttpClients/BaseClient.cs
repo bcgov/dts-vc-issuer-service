@@ -4,7 +4,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
-namespace Prime.HttpClients
+namespace Issuer.HttpClients
 {
     public enum PropertySerialization
     {

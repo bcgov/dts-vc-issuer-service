@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Newtonsoft.Json;
 
-namespace Prime.Models
+namespace Issuer.Models
 {
     [Table("Patient")]
     public class Patient : BaseAuditable, IValidatableObject
@@ -39,16 +38,8 @@ namespace Prime.Models
 
         public string Phone { get; set; }
 
-        public ICollection<PatientCredential> PatientCredentials { get; set; }
-
-        // [NotMapped]
-        // public string Base64QRCode
-        // {
-        //     get => PatientCredentials?
-        //         .OrderByDescending(s => s.Id)
-        //         .Select(ec => ec.Credential?.Base64QRCode)
-        //         .FirstOrDefault();
-        // }
+        [JsonIgnore]
+        public ICollection<Connection> Connections { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {

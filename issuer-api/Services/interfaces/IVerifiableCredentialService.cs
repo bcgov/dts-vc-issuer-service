@@ -1,13 +1,14 @@
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-using Prime.Models;
+using Issuer.Models;
+using System.Collections.Generic;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public interface IVerifiableCredentialService
     {
-        Task<bool> CreateConnectionAsync(Patient patient);
+        Task<int> IssueCredentialsAsync(Patient patient, List<Identifier> identifiers);
         Task<bool> WebhookAsync(JObject data, string topic);
         Task<bool> RevokeCredentialsAsync(int patientId);
     }

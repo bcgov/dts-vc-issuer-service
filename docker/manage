@@ -188,10 +188,9 @@ configureEnvironment() {
   export FRONTEND_WEB_PORT=4200
 
   # db
-  export DATABASE_NAME="dts_issuer-db"
   export DATABASE_USER="dbuser"
   export DATABASE_PASSWORD="dbpassword"
-  export DATABASE_PORT="5433"
+  export DATABASE_PORT="5432"
 
   # keycloak
   export KEYCLOAK_DB_VENDOR="POSTGRES"
@@ -221,7 +220,7 @@ configureEnvironment() {
   export AGENT_ADMIN_PORT=8024
   export AGENT_HTTP_IN_PORT=8021
   export AGENT_WS_IN_PORT=8026
-  export AGENT_WEBHOOK_URL=${AGENT_WEBHOOK_URL:-http://api:5000/webhooks}
+  export AGENT_WEBHOOK_URL=${AGENT_WEBHOOK_URL:-http://issuer-api-dev:5000/webhooks}
   export AGENT_HTTP_INTERFACE_PORT=8021
   export AGENT_NAME="DTS VC Issuer"
   export AGENT_ENDPOINT=${AGENT_ENDPOINT:-http://$DOCKERHOST:$AGENT_HTTP_INTERFACE_PORT}
@@ -232,12 +231,12 @@ configureEnvironment() {
   fi
 
   # issuer api
-  export ISSUER_DATABASE_NAME="dts_issuer-db"
+  export ISSUER_DATABASE_NAME="dts_issuer_db"
   export ISSUER_API_PORT=5000
   export ISSUER_AGENT_ADMIN_URL=${ISSUER_AGENT_ADMIN_URL:-http://agent:$AGENT_ADMIN_PORT}
 
   # immunization api
-  export IMMUNIZATION_DATABASE_NAME="dts_immunization-db"
+  export IMMUNIZATION_DATABASE_NAME="dts_immunization_db"
   export IMMUNIZATION_API_PORT=5001
 }
 

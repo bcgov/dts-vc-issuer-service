@@ -1,10 +1,10 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Prime.Models.Api;
-using Prime.Services;
+using Issuer.Models.Api;
+using Issuer.Services;
 
-namespace Prime.Controllers
+namespace Issuer.Controllers
 {
     [Produces("application/json")]
     [Route("api/[controller]")]

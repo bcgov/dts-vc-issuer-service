@@ -9,6 +9,9 @@ RUN apt-get update \
     && curl -sSL https://aka.ms/getvsdbgsh \
         | bash /dev/stdin -v latest -l /vsdbg
 
+RUN dotnet tool install --global dotnet-ef --version 3.1.14
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
 ENV DOTNET_USE_POLLING_FILE_WATCHER 1
 
 WORKDIR /app

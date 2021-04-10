@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Prime
+namespace Issuer
 {
     public static class ObjectExtensions
     {
