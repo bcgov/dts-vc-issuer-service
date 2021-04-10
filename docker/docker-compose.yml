@@ -20,7 +20,7 @@ services:
       - issuer-api-dev-obj:/app/obj
     depends_on:
       - db
-    entrypoint: /bin/bash 
+    entrypoint: /bin/bash
     command: [
       "-c",
       "echo waiting for db ...;
@@ -34,8 +34,6 @@ services:
   # .Net Core API Immunization
   immunization-api-dev:
     image: dts-vc-immunization-api-dev
-    environment:
-      DB_CONNECTION_STRING: "Host=db;Port=${DATABASE_PORT};Database=${IMMUNIZATION_DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD};"
     ports:
       - ${IMMUNIZATION_API_PORT}:5000
     networks:
@@ -44,8 +42,6 @@ services:
       - ../immunization-api/src:/app
       - immunization-api-dev-bin:/app/bin
       - immunization-api-dev-obj:/app/obj
-    depends_on:
-      - db
 
   # PostgreSQL database used by the API
   db:

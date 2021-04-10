@@ -236,7 +236,6 @@ configureEnvironment() {
   export ISSUER_AGENT_ADMIN_URL=${ISSUER_AGENT_ADMIN_URL:-http://agent:$AGENT_ADMIN_PORT}
 
   # immunization api
-  export IMMUNIZATION_DATABASE_NAME="dts_immunization_db"
   export IMMUNIZATION_API_PORT=5001
 }
 
