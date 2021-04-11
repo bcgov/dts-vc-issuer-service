@@ -37,7 +37,8 @@ namespace Issuer.Controllers
         [ProducesResponseType(typeof(ApiBadRequestResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        // [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Patient), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetPatientByUserId(Guid userId)
         {
             if(userId != User.GetissuerUserId())
@@ -45,7 +46,8 @@ namespace Issuer.Controllers
                 return Forbid();
             }
             var patient = await _patientService.GetPatientForUserIdAsync(userId);
-            return Ok(ApiResponse.Result( patient ));
+            // return Ok(ApiResponse.Result( patient ));
+            return Ok(patient);
         }
 
         // GET: api/Patients/5
@@ -58,7 +60,8 @@ namespace Issuer.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiMessageResponse), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        // [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Patient), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetPatientById(int patientId)
         {
             var patient = await _patientService.GetPatientAsync(patientId);
@@ -67,7 +70,8 @@ namespace Issuer.Controllers
                 return NotFound(ApiResponse.Message($"Patient not found with id {patientId}"));
             }
 
-            return Ok(ApiResponse.Result(patient));
+            // return Ok(ApiResponse.Result(patient));
+            return Ok(patient);
         }
 
         // POST: api/Patients
@@ -78,7 +82,8 @@ namespace Issuer.Controllers
         [ProducesResponseType(typeof(ApiBadRequestResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status201Created)]
+        // [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(Patient), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreatePatient(Patient patient)
         {
             if (patient == null)
@@ -99,7 +104,8 @@ namespace Issuer.Controllers
             return CreatedAtAction(
                 nameof(GetPatientById),
                 new { patientId = createdPatientId },
-                ApiResponse.Result(patient)
+                // ApiResponse.Result(patient)
+                patient
             );
         }
 
@@ -114,7 +120,8 @@ namespace Issuer.Controllers
         [ProducesResponseType(typeof(ApiBadRequestResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResultResponse<string>), StatusCodes.Status200OK)]
+        // [ProducesResponseType(typeof(ApiResultResponse<string>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         public async Task<ActionResult> Credential(int patientId, List<Identifier> identifiers)
         {
             var patient = await _patientService.GetPatientAsync(patientId);
