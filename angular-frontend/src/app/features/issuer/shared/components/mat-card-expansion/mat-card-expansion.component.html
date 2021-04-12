@@ -2,8 +2,6 @@
 <mat-card-actions align="end">
   <button mat-button
           class="adjust-margin"
-          [matTooltip]="(expanded) ? 'Collapse to show less details' : 'Expand to show more details'"
-          matTooltipPosition="right"
           (click)="expanded = !expanded">
     {{ (expanded) ? 'Collapse' : 'Expand' }}
     <mat-icon>

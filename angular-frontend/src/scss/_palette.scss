@@ -18,10 +18,13 @@ $palettes: (
     base: #ffb200 // BC Gov. Secondary
   ),
   red: (
-    base: #ed202a
+    lighter: #f5c6cb,
+    light: #f8d7da,
+    base: #ed202a,
+    dark: #721c24
   ),
   green: (
-    base: green
+    base: #81b214
   ),
   grey: (
     lightest: #eeeeee,

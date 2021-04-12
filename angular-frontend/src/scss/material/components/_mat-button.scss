@@ -1,0 +1,12 @@
+@import 'palette';
+@import 'bootstrap/bootstrap-imports';
+
+//
+// MATERIAL CARD
+//
+// @description
+// Applies general theme styles to Material Button components
+
+button.adjust-margin .mat-icon {
+  margin-top: -3px;
+}

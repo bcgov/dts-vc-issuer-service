@@ -17,21 +17,11 @@ export class CredentialsPageComponent implements OnInit {
   public patient: Patient | null;
   public issuedCredential: string | null;
 
-  public constructor(
-    private immunizationResource: ImmunizationResource,
-    private issuerResource: IssuerResource
-  ) {
-    this.immunizationRecords = null;
-    this.patient = null;
-    this.issuedCredential = null;
-  }
+  public selectedImmunizationRecords: ImmunizationRecord[];
 
-  public ngOnInit(): void {
-    const patientId = '9039555099';
-    this.immunizationResource.immunizations(patientId)
-      .subscribe((immunizationRecords: ImmunizationRecord[]) => this.immunizationRecords = immunizationRecords);
-
-    const patient = {
+  private readonly patientSeed = {
+    patientId: '9039555099',
+    create: {
       userId: '22091b5c-b2df-4f6e-b184-46d7bee84b08', // GUID
       hpdid: '22091b5c-b2df-4f6e-b184-46d7bee84b08',
       firstName: 'Foghorn',
@@ -43,16 +33,46 @@ export class CredentialsPageComponent implements OnInit {
       dateOfBirth: '2021-09-22',
       email: 'foghorn.leghorn@example.com',
       phone: '9999999999'
-    };
-    this.issuerResource.createPatient(patient)
-      .pipe(
-        map((patient: Patient) => this.patient = patient),
-        exhaustMap((patient: Patient) =>
-          this.immunizationResource.immunizations('9039555099')
-            .pipe(map((immunizationRecords: ImmunizationRecord[]) => [patient.id, immunizationRecords]))
-        ),
-        exhaustMap((params: [number, ImmunizationRecord[]]) => this.issuerResource.issueCredential(...params))
-      )
+    }
+  };
+
+  public constructor(
+    private immunizationResource: ImmunizationResource,
+    private issuerResource: IssuerResource
+  ) {
+    this.immunizationRecords = null;
+    this.patient = null;
+    this.issuedCredential = null;
+    this.selectedImmunizationRecords = [];
+  }
+
+  public addSelectedImmunizationRecord(immunizationRecord: ImmunizationRecord) {
+    if (!this.selectedImmunizationRecords.some(ir => ir.id === immunizationRecord.id)) {
+      this.selectedImmunizationRecords.push(immunizationRecord);
+    }
+  }
+
+  public removeSelectedImmunizationRecord(immunizationId: string) {
+    const index = this.selectedImmunizationRecords.findIndex(ir => ir.id === immunizationId);
+    if (index > -1) {
+      this.selectedImmunizationRecords.splice(index, 1);
+    }
+  }
+
+  public onCreateCredential() {
+    this.issuerResource.issueCredential(this.patient.id, this.selectedImmunizationRecords)
       .subscribe((issuedCredential: string) => this.issuedCredential = issuedCredential);
+  }
+
+  public ngOnInit(): void {
+    this.immunizationResource.immunizations(this.patientSeed.patientId)
+      .subscribe((immunizationRecords: ImmunizationRecord[]) =>
+        this.immunizationRecords = immunizationRecords
+      );
+
+    // TODO check for existence of the patient before creation
+    this.issuerResource.createPatient(this.patientSeed.create)
+      .pipe(map((patient: Patient) => this.patient = patient))
+      .subscribe();
   }
 }

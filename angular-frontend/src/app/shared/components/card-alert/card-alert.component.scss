@@ -1,27 +1,61 @@
 @import 'palette';
 @import 'bootstrap/bootstrap-imports';
 
+// TODO quick and dirty alert type mixin that needs refinement
+@mixin alert-type($border-color, $header-text-color, $footer-bg-color, $footer-color) {
+  border-left-color: $border-color;
+
+  .mat-card-avatar .mat-icon {
+    color: $header-text-color;
+  }
+
+  .mat-card-title {
+    color: $header-text-color;
+  }
+
+  color: $footer-color;
+
+  .mat-card-footer {
+    background-color: $footer-bg-color;
+    border-top-color: $border-color
+  }
+}
+
 .card-alert {
-  border-left: 8px solid theme-palette(blue, lighter);
+  border-left-width: 8px;
+  border-left-style: solid;
   margin-bottom: 2rem;
 
   .mat-card-avatar {
-    // border: 1px solid red;
+    padding-left: 2px;
+    padding-top: 1px;
     height: 60px;
     width: 60px;
 
     .mat-icon {
-      color: theme-palette(blue, light);
       font-size: 3.5rem;
     }
   }
 
   .mat-card-title {
-    color: theme-palette(blue, light);
     font-size: 2.25rem;
   }
 
   .mat-card-subtitle {
     margin-bottom: .9rem;
+  }
+
+  .mat-card-footer {
+    border-top-width: 1px;
+    border-top-style: solid;
+    padding: 1rem 1.2rem;
+
+    .mat-icon {
+      font-size: 1.75rem;
+    }
+  }
+
+  &.card-alert-info {
+    @include alert-type(#d6ddec, lighten(theme-palette(blue), 10%), #f8f9fb, theme-palette(blue));
   }
 }
