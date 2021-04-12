@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Prime.Configuration
+namespace Issuer.Configuration
 {
     public abstract class SeededTable<T> : IEntityTypeConfiguration<T> where T : class
     {

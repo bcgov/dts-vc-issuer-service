@@ -1,0 +1,8 @@
+<ng-container *ngIf="title">
+  <h1 class="mb-3">{{ title }}</h1>
+
+  <p *ngIf="hasPageHeaderSummary"
+     class="subtitle mb-3">
+    <ng-content select="[appPageHeaderSummary]"></ng-content>
+  </p>
+</ng-container>

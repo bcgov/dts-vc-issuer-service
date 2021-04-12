@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Prime.Models
+namespace Issuer.Models
 {
     public class BaseAuditable
     {

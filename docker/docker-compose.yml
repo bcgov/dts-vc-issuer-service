@@ -6,8 +6,10 @@ services:
   issuer-api-dev:
     image: dts-vc-issuer-api-dev
     environment:
-      DB_CONNECTION_STRING: "Host=db;Port=${DATABASE_PORT};Database=${DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD};"
-      AGENT_ADMIN_API_KEY: ${AGENT_ADMIN_API_KEY}
+      APP: "dev"
+      DB_CONNECTION_STRING: "Host=db;Port=${DATABASE_PORT};Database=${ISSUER_DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD};"
+      ISSUER_AGENT_ADMIN_API_KEY: ${AGENT_ADMIN_API_KEY}
+      ISSUER_AGENT_ADMIN_API_URL: ${ISSUER_AGENT_ADMIN_URL}
     ports:
       - ${ISSUER_API_PORT}:5000
     networks:
@@ -18,40 +20,36 @@ services:
       - issuer-api-dev-obj:/app/obj
     depends_on:
       - db
-    command: >
-      /bin/bash -c "
-      echo waiting for db ...;
+    entrypoint: /bin/bash 
+    command: [
+      "-c",
+      "echo waiting for db ...;
       sleep 15;
-      dotnet watch run"
+      echo \"Running database migrations...\";
+      dotnet ef database update;
+      echo \"Starting service...\";
+      dotnet watch run --urls=http://+:5000"
+    ]
 
   # .Net Core API Immunization
   immunization-api-dev:
     image: dts-vc-immunization-api-dev
-    # environment:
-    #   DB_CONNECTION_STRING: "Host=db;Port=${DATABASE_PORT};Database=${DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD};"
     ports:
       - ${IMMUNIZATION_API_PORT}:5000
     networks:
       - dts-vc-issuer
     volumes:
-      - ../immunization-api/immunization-api/:/app
+      - ../immunization-api/src:/app
       - immunization-api-dev-bin:/app/bin
       - immunization-api-dev-obj:/app/obj
-    # depends_on:
-    #   - db
-    command: >
-      /bin/bash -c "
-      echo waiting for db ...;
-      sleep 15;
-      dotnet watch run"
 
   # PostgreSQL database used by the API
   db:
     image: postgres:latest
     environment:
-      POSTGRES_USERNAME: ${DATABASE_USER}
+      POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_DB: default
     ports:
       - ${DATABASE_PORT}:5432
     networks:
@@ -131,6 +129,7 @@ services:
       ACAPY_AUTO_RESPOND_PRESENTATION_REQUEST: "true"
       ACAPY_AUTO_RESPOND_CREDENTIAL_REQUEST: "true"
       ACAPY_AUTO_VERIFY_PRESENTATION: "true"
+      ACAPY_TAILS_SERVER_BASE_URL: ${TAILS_SERVER_URL}
       AGENT_HTTP_IN_PORT: ${AGENT_HTTP_IN_PORT}
       AGENT_WS_IN_PORT: ${AGENT_WS_IN_PORT}
       AGENT_ADMIN_PORT: ${AGENT_ADMIN_PORT}
@@ -149,7 +148,7 @@ services:
     entrypoint: /bin/bash
     command: [
         "-c",
-        "curl -d '{\"seed\":\"${AGENT_WALLET_SEED}\", \"role\":\"TRUST_ANCHOR\", \"alias\":\"${AGENT_WALLET_NAME}\"}' -X POST ${LEDGER_URL}/register; \
+        "curl -d '{\"seed\":\"${AGENT_WALLET_SEED}\", \"role\":\"ENDORSER\", \"alias\":\"${AGENT_WALLET_NAME}\"}' -X POST ${LEDGER_URL}/register; \
         sleep 5; \
         aca-py start \
         --inbound-transport http '0.0.0.0' ${AGENT_HTTP_IN_PORT} \
@@ -166,7 +165,7 @@ services:
   wallet:
     image: postgres:latest
     environment:
-      POSTGRES_USERNAME: ${WALLET_USER}
+      POSTGRES_USER: ${WALLET_USER}
       POSTGRES_PASSWORD: ${WALLET_PASSWORD}
       POSTGRES_DB: ${WALLET_DATABASE}
     networks:

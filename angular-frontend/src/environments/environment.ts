@@ -6,8 +6,8 @@ export const environment = {
   production: false,
   version: '1.0.0',
   apiEndpoints: {
-    immunization: '/api/v1',
-    issuer: '/api/v1'
+    immunization: 'http://localhost:5001/api',
+    issuer: 'http://localhost:5000/api'
   },
   loginRedirectUrl: 'http://localhost:4200',
 };

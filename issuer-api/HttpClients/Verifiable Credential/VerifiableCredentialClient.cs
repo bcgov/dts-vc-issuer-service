@@ -6,22 +6,22 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text;
-using Prime.Models;
+using Issuer.Models;
 
-namespace Prime.HttpClients
+namespace Issuer.HttpClients
 {
     public class VerifiableCredentialClient : IVerifiableCredentialClient
     {
         private readonly HttpClient _client;
         private readonly ILogger _logger;
 
-        private static readonly string SchemaName = "vaccine";
+        private static readonly string SchemaName = "test";
         private static readonly string SchemaVersion = "1.0";
         // If schema changes, the following must be updated in all agents for each environment as the code changes are pushed so versions are the same
         // and have verifier app updated by aries team in each environment (send them schema id, if claims change send them new attributes)
         // Update the following through postman:
         // 1. Add new schema, incrementing schema version -> schema_name = vaccine
-        // 2. Create a credential definition for schema -> support_revocation = true, tag = prime
+        // 2. Create a credential definition for schema -> support_revocation = true, tag = issuer
 
         public VerifiableCredentialClient(
             HttpClient client,
@@ -139,10 +139,16 @@ namespace Prime.HttpClients
             }
 
             JObject body = JObject.Parse(await response.Content.ReadAsStringAsync());
+            var schemas = (JArray)body.SelectToken("schema_ids");
 
-            _logger.LogInformation("SCHEMA_ID: {schemaid}", (string)body.SelectToken("schema_ids[0]"));
-
-            return (string)body.SelectToken("schema_ids[0]");
+            if(schemas != null && schemas.Count > 0)
+            {
+                _logger.LogInformation("SCHEMA_ID: {schemaid}", (string)body.SelectToken("schema_ids[0]"));
+                return (string)body.SelectToken("schema_ids[0]");
+            }
+            else {
+                return null;
+            }
         }
 
         public async Task<JObject> GetSchema(string schemaId)
@@ -169,6 +175,45 @@ namespace Prime.HttpClients
             _logger.LogInformation("GET Schema response {@JObject}", JsonConvert.SerializeObject(body));
 
             return body;
+        }
+
+        public async Task<string> CreateSchemaAsync()
+        {
+            var schema = new JObject
+            {
+                { "attributes", new JArray
+                    {
+                        "test"
+                    }
+                },
+                { "schema_name", SchemaName },
+                { "schema_version", SchemaVersion}
+            };
+
+            var httpContent = new StringContent(schema.ToString(), Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = null;
+            try
+            {
+                response = await _client.PostAsync($"schemas", httpContent);
+            }
+            catch (Exception ex)
+            {
+                await LogError(response, ex);
+                throw new VerifiableCredentialApiException("Error occurred attempting to create a schema: ", ex);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await LogError(response);
+                throw new VerifiableCredentialApiException($"Error code {response.StatusCode} was provided when calling VerifiableCredentialClient::CreateSchemaAsync");
+            }
+
+            JObject body = JObject.Parse(await response.Content.ReadAsStringAsync());
+
+            _logger.LogInformation("Schema Created successfully {@JObject}", JsonConvert.SerializeObject(body));
+
+            return (string)body.SelectToken("schema_id");
         }
 
         public async Task<string> GetIssuerDidAsync()
@@ -220,8 +265,47 @@ namespace Prime.HttpClients
             JArray credentialDefinitionIds = (JArray)body.SelectToken("credential_definition_ids");
 
             _logger.LogInformation("GET Credential Definition IDs {@JObject}", JsonConvert.SerializeObject(body));
+            if(credentialDefinitionIds != null && credentialDefinitionIds.Count > 0)
+            {
+                return (string)body.SelectToken($"credential_definition_ids[{credentialDefinitionIds.Count - 1}]");
+            }
 
-            return (string)body.SelectToken($"credential_definition_ids[{credentialDefinitionIds.Count - 1}]");
+            return null;
+        }
+
+        public async Task<string> CreateCredentialDefinitionAsync(string schemaId)
+        {
+            var credentialDefinition = new JObject
+            {
+                { "schema_id", schemaId },
+                { "support_revocation", true },
+                { "tag", "test" }
+            };
+
+            var httpContent = new StringContent(credentialDefinition.ToString(), Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = null;
+            try
+            {
+                response = await _client.PostAsync($"credential-definitions", httpContent);
+            }
+            catch (Exception ex)
+            {
+                await LogError(response, ex);
+                throw new VerifiableCredentialApiException("Error occurred attempting to create a credential-definition: ", ex);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await LogError(response);
+                throw new VerifiableCredentialApiException($"Error code {response.StatusCode} was provided when calling VerifiableCredentialClient::CreateCredentialDefinitionAsync");
+            }
+
+            JObject body = JObject.Parse(await response.Content.ReadAsStringAsync());
+
+            _logger.LogInformation("Credential Definition Created successfully {@JObject}", JsonConvert.SerializeObject(body));
+
+            return (string)body.SelectToken("credential_definition_id");
         }
 
         public async Task<JObject> GetPresentationProof(string presentationExchangeId)

@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using Prime.Models;
+using Issuer.Models;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public interface IPatientService
     {

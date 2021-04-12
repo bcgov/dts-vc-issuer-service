@@ -1,7 +1,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Prime.Infrastructure
+namespace Issuer.Infrastructure
 {
     public class EmptyStringToNullJsonConverter : JsonConverter
     {

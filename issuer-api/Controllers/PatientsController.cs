@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-using Prime.Models;
-using Prime.Models.Api;
-using Prime.Services;
+using Issuer.Models;
+using Issuer.Models.Api;
+using Issuer.Services;
 
-namespace Prime.Controllers
+namespace Issuer.Controllers
 {
     [Produces("application/json")]
     [Route("api/[controller]")]
@@ -18,11 +18,14 @@ namespace Prime.Controllers
     public class PatientsController : ControllerBase
     {
         private readonly IPatientService _patientService;
+        private readonly IVerifiableCredentialService _verifiableCredentialService;
 
         public PatientsController(
-            IPatientService patientService)
+            IPatientService patientService,
+            IVerifiableCredentialService verifiableCredentialService)
         {
             _patientService = patientService;
+            _verifiableCredentialService = verifiableCredentialService;
         }
 
         // GET: api/Patients/026a6bf5-3a7a-4b63-8dd6-f9a10ce30bbb
@@ -30,19 +33,21 @@ namespace Prime.Controllers
         /// Gets Patient by UserId
         /// </summary>
         /// <param name="userId"></param>
-        [HttpGet("{userId}", Name = nameof(GetPatientByUserId))]
+        [HttpGet("{userId}:Guid", Name = nameof(GetPatientByUserId))]
         [ProducesResponseType(typeof(ApiBadRequestResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        // [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Patient), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetPatientByUserId(Guid userId)
         {
-            if(userId != User.GetPrimeUserId())
+            if(userId != User.GetissuerUserId())
             {
                 return Forbid();
             }
             var patient = await _patientService.GetPatientForUserIdAsync(userId);
-            return Ok(ApiResponse.Result( patient ));
+            // return Ok(ApiResponse.Result( patient ));
+            return Ok(patient);
         }
 
         // GET: api/Patients/5
@@ -55,7 +60,8 @@ namespace Prime.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ApiMessageResponse), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        // [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Patient), StatusCodes.Status200OK)]
         public async Task<ActionResult> GetPatientById(int patientId)
         {
             var patient = await _patientService.GetPatientAsync(patientId);
@@ -64,7 +70,8 @@ namespace Prime.Controllers
                 return NotFound(ApiResponse.Message($"Patient not found with id {patientId}"));
             }
 
-            return Ok(ApiResponse.Result(patient));
+            // return Ok(ApiResponse.Result(patient));
+            return Ok(patient);
         }
 
         // POST: api/Patients
@@ -75,7 +82,8 @@ namespace Prime.Controllers
         [ProducesResponseType(typeof(ApiBadRequestResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status201Created)]
+        // [ProducesResponseType(typeof(ApiResultResponse<Patient>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(Patient), StatusCodes.Status201Created)]
         public async Task<ActionResult> CreatePatient(Patient patient)
         {
             if (patient == null)
@@ -84,7 +92,7 @@ namespace Prime.Controllers
                 return BadRequest(ApiResponse.BadRequest(ModelState));
             }
 
-            if (await _patientService.UserIdExistsAsync(User.GetPrimeUserId()))
+            if (await _patientService.UserIdExistsAsync(User.GetissuerUserId()))
             {
                 ModelState.AddModelError("Patient.UserId", "An patient already exists for this User Id, only one patient is allowed per User Id.");
                 return BadRequest(ApiResponse.BadRequest(ModelState));
@@ -96,8 +104,36 @@ namespace Prime.Controllers
             return CreatedAtAction(
                 nameof(GetPatientById),
                 new { patientId = createdPatientId },
-                ApiResponse.Result(patient)
+                // ApiResponse.Result(patient)
+                patient
             );
+        }
+
+        // POST: api/Patients/5/credential
+        /// <summary>
+        /// Issues Credentials for a patient.
+        /// Creates a new connection if no active connection exists.
+        /// </summary>
+        /// <param name="patientId"></param>
+        /// <param name="identifiers"></param>
+        [HttpPost("{patientId}/credential", Name = nameof(Credential))]
+        [ProducesResponseType(typeof(ApiBadRequestResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        // [ProducesResponseType(typeof(ApiResultResponse<string>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<ActionResult> Credential(int patientId, List<Identifier> identifiers)
+        {
+            var patient = await _patientService.GetPatientAsync(patientId);
+            if(patient == null)
+            {
+                return BadRequest();
+            }
+
+            var qrCode = await _verifiableCredentialService.IssueCredentialsAsync(patient, identifiers);
+
+            // return qrcode if invitation not yet acepted otherwise nothing
+            return Ok(qrCode);
         }
 
     }

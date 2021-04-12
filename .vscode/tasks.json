@@ -8,6 +8,7 @@
             "args": [
                 "build",
                 "${workspaceFolder}/immunization-api/immunization-api/immunization-api.csproj",
+                "${workspaceFolder}/issuer-api/prime.API.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -20,6 +21,7 @@
             "args": [
                 "publish",
                 "${workspaceFolder}/immunization-api/immunization-api/immunization-api.csproj",
+                "${workspaceFolder}/issuer-api/prime.API.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,6 +35,7 @@
                 "watch",
                 "run",
                 "${workspaceFolder}/immunization-api/immunization-api/immunization-api.csproj",
+                "${workspaceFolder}/issuer-api/prime.API.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],

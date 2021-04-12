@@ -6,13 +6,13 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using QRCoder;
-
-using Prime.Models;
-using Prime.HttpClients;
-using Prime.Models.Api;
+using Issuer.Models;
+using Issuer.HttpClients;
+using Issuer.Models.Api;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public class WebhookTopic
     {
@@ -39,7 +39,6 @@ namespace Prime.Services
     public class VerifiableCredentialService : BaseService, IVerifiableCredentialService
     {
         private readonly IVerifiableCredentialClient _verifiableCredentialClient;
-        private readonly IPatientService _patientService;
         private readonly ILogger _logger;
 
         public VerifiableCredentialService(
@@ -51,7 +50,6 @@ namespace Prime.Services
             : base(context, httpContext)
         {
             _verifiableCredentialClient = verifiableCredentialClient;
-            _patientService = patientService;
             _logger = logger;
         }
 
@@ -78,50 +76,109 @@ namespace Prime.Services
             }
         }
 
-        // Create an invitation to establish a connection between the agents.
-        public async Task<bool> CreateConnectionAsync(Patient patient)
+        public async Task<string> IssueCredentialsAsync(Patient patient, List<Identifier> identifiers)
         {
+            var connectionActive = true;
+            var connection = await _context.Connections
+                            .Where(c => c.AcceptedConnectionDate != null)
+                            .OrderByDescending(c => c.AcceptedConnectionDate)
+                            .FirstOrDefaultAsync(c => c.PatientId == patient.Id);
+
+            if(connection == null)
+            {
+                // Create connection and wait for connection to be accepted before issuing credentials
+                connection = await CreateConnectionAsync(patient);
+                connectionActive = false;
+            }
+
             var alias = patient.Id.ToString();
             var issuerDid = await _verifiableCredentialClient.GetIssuerDidAsync();
             var schemaId = await _verifiableCredentialClient.GetSchemaId(issuerDid);
-            var credentialDefinitionId = await _verifiableCredentialClient.GetCredentialDefinitionIdAsync(schemaId);
-
-            var patientCredential = new PatientCredential
+            if(schemaId == null)
             {
-                PatientId = patient.Id,
-                Credential = new Credential
+                schemaId =  await _verifiableCredentialClient.CreateSchemaAsync();
+            }
+            var credentialDefinitionId = await _verifiableCredentialClient.GetCredentialDefinitionIdAsync(schemaId);
+            if(credentialDefinitionId == null)
+            {
+                credentialDefinitionId = await _verifiableCredentialClient.CreateCredentialDefinitionAsync(schemaId);
+            }
+            var credentials = new List<Credential>();
+
+            foreach(var identifier in identifiers)
+            {
+                var newCredential = new Credential
                 {
+                    ConnectionId = connection.Id,
                     SchemaId = schemaId,
                     CredentialDefinitionId = credentialDefinitionId,
-                    Alias = alias
-                }
-            };
+                    Identifier = new Identifier
+                    {
+                        Guid = identifier.Guid,
+                        Uri = identifier.Uri
+                    }
+                };
 
-            _context.PatientCredentials.Add(patientCredential);
+                credentials.Add(newCredential);
+            }
+
+            await _context.Credentials.AddRangeAsync(credentials);
 
             var created = await _context.SaveChangesAsync();
 
             if (created < 1)
             {
-                throw new InvalidOperationException("Could not store credential.");
+                throw new InvalidOperationException("Could not store credentials.");
             }
 
-            await CreateInvitation(patientCredential.Credential);
+            if(connectionActive)
+            {
+                // Issue credentials if connection already active
+                foreach(var credential in credentials)
+                {
+                    _logger.LogInformation("Issuing a credential with this connection_id: {connectionId}", connection.ConnectionId);
+                    // Assumed that when a connection invitation has been sent and accepted
+                    await IssueCredential(connection.ConnectionId, patient.Id, credential.Identifier.Uri);
+                    _logger.LogInformation("Credential has been issued for connection_id: {connectionId}", connection.ConnectionId);
+                }
 
-            return true;
+                return null;
+            }
+
+            return connection.Base64QRCode;
+        }
+
+        // Create an invitation to establish a connection between the agents.
+        private async Task<Connection> CreateConnectionAsync(Patient patient)
+        {
+            var connection = new Connection
+            {
+                PatientId = patient.Id
+            };
+
+            _context.Connections.Add(connection);
+
+            var created = await _context.SaveChangesAsync();
+
+            if (created < 1)
+            {
+                throw new InvalidOperationException("Could not store connection.");
+            }
+
+            await CreateInvitation(connection);
+
+            return connection;
         }
 
         public async Task<bool> RevokeCredentialsAsync(int patientId)
         {
-            var patientCredentials = await _context.PatientCredentials
-                .Include(ec => ec.Credential)
-                .Where(ec => ec.PatientId == patientId)
-                .Where(ec => ec.Credential.CredentialExchangeId != null)
-                .Where(ec => ec.Credential.RevokedCredentialDate == null)
-                .Select(ec => ec.Credential)
+            var credentials = await _context.Credentials
+                .Where(ec => ec.Connection.PatientId == patientId)
+                .Where(ec => ec.CredentialExchangeId != null)
+                .Where(ec => ec.RevokedCredentialDate == null)
                 .ToListAsync();
 
-            foreach (var credential in patientCredentials)
+            foreach (var credential in credentials)
             {
                 var success = credential.AcceptedCredentialDate == null
                     ? await _verifiableCredentialClient.DeleteCredentialAsync(credential)
@@ -130,7 +187,7 @@ namespace Prime.Services
                 if (success)
                 {
                     credential.RevokedCredentialDate = DateTimeOffset.Now;
-                    await _verifiableCredentialClient.SendMessageAsync(credential.ConnectionId, "This credential has been revoked.");
+                    await _verifiableCredentialClient.SendMessageAsync(credential.Connection.ConnectionId, "This credential has been revoked.");
                 }
             }
 
@@ -138,9 +195,9 @@ namespace Prime.Services
             return true;
         }
 
-        private async Task<int> CreateInvitation(Credential credential)
+        private async Task<int> CreateInvitation(Connection connection)
         {
-            var invitation = await _verifiableCredentialClient.CreateInvitationAsync(credential.Alias);
+            var invitation = await _verifiableCredentialClient.CreateInvitationAsync(connection.PatientId.ToString());
             var invitationUrl = invitation.Value<string>("invitation_url");
 
             QRCodeGenerator qrGenerator = new QRCodeGenerator();
@@ -148,7 +205,7 @@ namespace Prime.Services
             Base64QRCode qrCode = new Base64QRCode(qrCodeData);
             string qrCodeImageAsBase64 = qrCode.GetGraphic(20, "#003366", "#ffffff");
 
-            credential.Base64QRCode = qrCodeImageAsBase64;
+            connection.Base64QRCode = qrCodeImageAsBase64;
             return await _context.SaveChangesAsync();
         }
 
@@ -164,7 +221,7 @@ namespace Prime.Services
             {
                 case ConnectionState.Invitation:
                     // Patient Id stored as alias on invitation
-                    await UpdateCredentialConnectionId(data.Value<int>("alias"), data.Value<string>("connection_id"));
+                    await UpdateConnectionId(data.Value<int>("alias"), data.Value<string>("connection_id"));
                     return true;
 
                 case ConnectionState.Request:
@@ -174,15 +231,28 @@ namespace Prime.Services
                     var alias = data.Value<int>("alias");
                     connectionId = data.Value<string>("connection_id");
 
-                    _logger.LogInformation("Issuing a credential with this connection_id: {connectionId}", connectionId);
+                    var connection = GetConnectionByConnectionIdAsync(connectionId);
 
-                    // Assumed that when a connection invitation has been sent and accepted
-                    await IssueCredential(connectionId, alias);
-                    _logger.LogInformation("Credential has been issued for connection_id: {connectionId}", connectionId);
+                    connection.AcceptedConnectionDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    var credentials = await _context.Credentials
+                        .Where(c => c.ConnectionId == connection.Id)
+                        .ToListAsync();
+
+                    foreach(var credential in credentials)
+                    {
+                        _logger.LogInformation("Issuing a credential with this connection_id: {connectionId}", connectionId);
+                        // Assumed that when a connection invitation has been sent and accepted
+                        await IssueCredential(connectionId, alias, credential.Identifier.Uri);
+                        _logger.LogInformation("Credential has been issued for connection_id: {connectionId}", connectionId);
+                    }
 
                     return true;
 
                 case ConnectionState.Active:
+                    // Update connection accepted date
                     return true;
 
                 default:
@@ -190,6 +260,7 @@ namespace Prime.Services
                     return false;
             }
         }
+
 
         // Handle webhook events for issue credential topics.
         private async Task<bool> HandleIssueCredentialAsync(JObject data)
@@ -214,9 +285,9 @@ namespace Prime.Services
 
         private async Task<int> UpdateCredentialAfterIssued(JObject data)
         {
-            var connection_id = (string)data.SelectToken("connection_id");
+            var cred_ex_id = (string)data.SelectToken("cred_ex_id");
 
-            var credential = GetCredentialByConnectionIdAsync(connection_id);
+            var credential = GetCredentialByCredentialExchangeIdAsync(cred_ex_id);
 
             if (credential != null)
             {
@@ -226,56 +297,62 @@ namespace Prime.Services
             return await _context.SaveChangesAsync();
         }
 
-        private async Task<int> UpdateCredentialConnectionId(int patientId, string connection_id)
+        private async Task<int> UpdateConnectionId(int patientId, string connection_id)
         {
-            // Add ConnectionId to Patient's newest credential
-            var credential = await _context.PatientCredentials
-                .Include(ec => ec.Credential)
+            // Add ConnectionId to Patient's newest connection
+            var connection = await _context.Connections
                 .Where(ec => ec.PatientId == patientId)
                 .OrderByDescending(ec => ec.Id)
-                .Select(ec => ec.Credential)
                 .FirstOrDefaultAsync();
 
-            if (credential != null)
+            if (connection != null)
             {
-                _logger.LogInformation("Updating this credential's (Id = {id}) connectionId to {connection_id}", credential.Id, connection_id);
+                _logger.LogInformation("Updating this connection's (Id = {id}) connectionId to {connection_id}", connection.Id, connection_id);
 
-                credential.ConnectionId = connection_id;
-                _context.Credentials.Update(credential);
+                connection.ConnectionId = connection_id;
+                _context.Connections.Update(connection);
             }
 
             return await _context.SaveChangesAsync();
         }
 
-        private Credential GetCredentialByConnectionIdAsync(string connectionId)
+        private Connection GetConnectionByConnectionIdAsync(string connectionId)
         {
-            return _context.Credentials
+            return _context.Connections
+                    .Include(c => c.Credentials)
+                        .ThenInclude(cr => cr.Identifier)
                     .SingleOrDefault(c => c.ConnectionId == connectionId);
         }
 
+        private Credential GetCredentialByCredentialExchangeIdAsync(string credentialExchangeId)
+        {
+            return _context.Credentials
+                    .SingleOrDefault(c => c.CredentialExchangeId == credentialExchangeId);
+        }
+
         // Issue a credential to an active connection.
-        private async Task<JObject> IssueCredential(string connectionId, int patientId)
+        private async Task<JObject> IssueCredential(string connectionId, int patientId, string url)
         {
             var patient = _context.Patients
                 .SingleOrDefault(e => e.Id == patientId);
 
-            var credential = GetCredentialByConnectionIdAsync(connectionId);
+            var connection = GetConnectionByConnectionIdAsync(connectionId);
 
-            if (credential == null || credential.AcceptedCredentialDate != null)
-            {
-                _logger.LogInformation("Cannot issue credential, credential with this connectionId:{connectionId} from database is null, or a credential has already been accepted.", connectionId);
-                return null;
-            }
+            // if (credential == null || credential.AcceptedCredentialDate != null)
+            // {
+            //     _logger.LogInformation("Cannot issue credential, credential with this connectionId:{connectionId} from database is null, or a credential has already been accepted.", connectionId);
+            //     return null;
+            // }
 
-            var credentialAttributes = await CreateCredentialAttributesAsync(patientId);
+            var credentialAttributes = await CreateCredentialAttributesAsync(patientId, url);
             var credentialOffer = await CreateCredentialOfferAsync(connectionId, credentialAttributes);
             var issueCredentialResponse = await _verifiableCredentialClient.IssueCredentialAsync(credentialOffer);
 
-            // Set credentials CredentialExchangeId from issue credential response
-            credential.CredentialExchangeId = (string)issueCredentialResponse.SelectToken("credential_exchange_id");
-            _context.Credentials.Update(credential);
+            // // Set credentials CredentialExchangeId from issue credential response
+            // credential.CredentialExchangeId = (string)issueCredentialResponse.SelectToken("credential_exchange_id");
+            // _context.Credentials.Update(credential);
 
-            await _context.SaveChangesAsync();
+            // await _context.SaveChangesAsync();
 
             return issueCredentialResponse;
         }
@@ -316,44 +393,53 @@ namespace Prime.Services
         }
 
         // Create the credential proposal attributes.
-        private async Task<JArray> CreateCredentialAttributesAsync(int patientId)
+        private async Task<JArray> CreateCredentialAttributesAsync(int patientId, string url)
         {
-            var patient = await _patientService.GetPatientAsync(patientId);
+            // var record = _immunizationClient
             var immunizationRecord = new ImmunizationRecordResponse();
 
             var attributes = new JArray
             {
                 new JObject
                 {
-                    { "name", "Lot Number"},
-                    { "value", immunizationRecord.LotNumber }
-                },
-                new JObject
-                {
-                    { "name", "Date of Vaccination" },
-                    { "value", immunizationRecord.VaccinationDate }
-                },
-                new JObject
-                {
-                    { "name", "Dose Number" },
-                    { "value", immunizationRecord.DoseNumber }
-                },
-                new JObject
-                {
-                    { "name", "Country of Vaccination" },
-                    { "value", immunizationRecord.CountryOfVaccination }
-                },
-                new JObject
-                {
-                    { "name", "Administering Centre" },
-                    { "value", immunizationRecord.Facility }
-                },
-                new JObject
-                {
-                    { "name", "Next Vaccination Date" },
-                    { "value", immunizationRecord.NextVaccinationDueDate }
+                    { "name", "test"},
+                    { "value", "test" }
                 }
             };
+
+            // var attributes = new JArray
+            // {
+            //     new JObject
+            //     {
+            //         { "name", "Lot Number"},
+            //         { "value", immunizationRecord.LotNumber }
+            //     },
+            //     new JObject
+            //     {
+            //         { "name", "Date of Vaccination" },
+            //         { "value", immunizationRecord.VaccinationDate }
+            //     },
+            //     new JObject
+            //     {
+            //         { "name", "Dose Number" },
+            //         { "value", immunizationRecord.DoseNumber }
+            //     },
+            //     new JObject
+            //     {
+            //         { "name", "Country of Vaccination" },
+            //         { "value", immunizationRecord.CountryOfVaccination }
+            //     },
+            //     new JObject
+            //     {
+            //         { "name", "Administering Centre" },
+            //         { "value", immunizationRecord.Facility }
+            //     },
+            //     new JObject
+            //     {
+            //         { "name", "Next Vaccination Date" },
+            //         { "value", immunizationRecord.NextVaccinationDueDate }
+            //     }
+            // };
 
             _logger.LogInformation("Credential offer attributes for {@JObject}", JsonConvert.SerializeObject(attributes));
 

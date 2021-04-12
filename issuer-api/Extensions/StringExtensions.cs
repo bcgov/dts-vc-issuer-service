@@ -1,4 +1,4 @@
-namespace Prime
+namespace Issuer
 {
     public static class StringExtensions
     {

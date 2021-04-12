@@ -9,7 +9,7 @@ using Serilog.Events;
 using Serilog.Formatting.Json;
 using Serilog.Sinks.SystemConsole.Themes;
 
-namespace Prime
+namespace Issuer
 {
     public class Program
     {
@@ -44,11 +44,11 @@ namespace Prime
 
         private static void CreateLogger()
         {
-            string path = PrimeEnvironment.LogFile;
+            string path = IssuerEnvironment.LogFile;
 
             try
             {
-                if (PrimeEnvironment.IsLocal)
+                if (IssuerEnvironment.IsLocal)
                 {
                     Directory.CreateDirectory(path);
                 }

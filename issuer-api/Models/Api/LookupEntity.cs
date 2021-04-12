@@ -1,4 +1,4 @@
-namespace Prime.Models.Api
+namespace Issuer.Models.Api
 {
     public class LookupEntity
     {

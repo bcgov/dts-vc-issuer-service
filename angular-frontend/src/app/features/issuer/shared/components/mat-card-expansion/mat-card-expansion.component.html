@@ -1,0 +1,45 @@
+<!-- TODO make this into div for expansion instead of card specific -->
+<mat-card-actions align="end">
+  <button mat-button
+          class="adjust-margin"
+          [matTooltip]="(expanded) ? 'Collapse to show less details' : 'Expand to show more details'"
+          matTooltipPosition="right"
+          (click)="expanded = !expanded">
+    {{ (expanded) ? 'Collapse' : 'Expand' }}
+    <mat-icon>
+      {{ (expanded) ? 'expand_less' : 'expand_more' }}
+    </mat-icon>
+  </button>
+</mat-card-actions>
+
+<ng-container *ngIf="expanded">
+  <mat-list dense>
+
+    <mat-divider></mat-divider>
+
+    <mat-list-item>
+      <h3 matLine>Vaccine Brand</h3>
+      <p matLine>{{ immunizationRecord.vaccine.productName }}</p>
+    </mat-list-item>
+    <mat-list-item>
+      <h3 matLine>Dose Number</h3>
+      <p matLine>{{ immunizationRecord.doseNumber }}</p>
+    </mat-list-item>
+    <mat-list-item>
+      <h3 matLine>Vaccine Lot Number</h3>
+      <p matLine>{{ immunizationRecord.lotNumber }}</p>
+    </mat-list-item>
+    <mat-list-item>
+      <h3 matLine>Administration Centre</h3>
+      <p matLine>{{ immunizationRecord.administeringCentre }}</p>
+    </mat-list-item>
+    <mat-list-item>
+      <h3 matLine>Country of Administration</h3>
+      <p matLine>{{ immunizationRecord.countryOfVaccination }}</p>
+    </mat-list-item>
+    <mat-list-item>
+      <h3 matLine>Due Date of Next Dose</h3>
+      <p matLine>{{ immunizationRecord.nextVaccinationDate | formatDate: 'MMMM DD, YYYY' }}</p>
+    </mat-list-item>
+  </mat-list>
+</ng-container>

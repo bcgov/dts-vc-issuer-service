@@ -2,17 +2,21 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Prime.Models;
+using Issuer.HttpClients;
+using Issuer.Models;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public class PatientService : BaseService, IPatientService
     {
+        private readonly IImmunizationClient _immunizationClient;
         public PatientService(
             ApiDbContext context,
-            IHttpContextAccessor httpContext)
+            IHttpContextAccessor httpContext,
+            IImmunizationClient immunizationClient)
             : base(context, httpContext)
         {
+            _immunizationClient = immunizationClient;
         }
 
         public async Task<bool> PatientExistsAsync(int patientId)
@@ -32,7 +36,7 @@ namespace Prime.Services
         public async Task<Patient> GetPatientForUserIdAsync(Guid userId)
         {
             return await _context.Patients
-                .Include(e => e.PatientCredentials)
+                .Include(e => e.Connections)
                 .AsNoTracking()
                 .SingleOrDefaultAsync(e => e.UserId == userId);
         }
@@ -40,7 +44,7 @@ namespace Prime.Services
         public async Task<Patient> GetPatientAsync(int patientId)
         {
             return await _context.Patients
-                .Include(e => e.PatientCredentials)
+                .Include(e => e.Connections)
                 .AsNoTracking()
                 .SingleOrDefaultAsync(e => e.Id == patientId);
         }

@@ -13,6 +13,9 @@
             "program": "${workspaceFolder}/immunization-api/immunization-api/bin/Debug/net5.0/immunization-api.dll",
             "args": [],
             "cwd": "${workspaceFolder}/immunization-api/immunization-api",
+            "program": "${workspaceFolder}/issuer-api/bin/Debug/netcoreapp3.1/prime.API.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/issuer-api",
             "stopAtEntry": false,
             // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
             "serverReadyAction": {

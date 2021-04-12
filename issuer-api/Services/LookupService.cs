@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Prime.Models;
-using Prime.Models.Api;
+using Issuer.Models;
+using Issuer.Models.Api;
 
-namespace Prime.Services
+namespace Issuer.Services
 {
     public class LookupService : BaseService, ILookupService
     {

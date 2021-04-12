@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using Prime.Models;
+using Issuer.Models;
 
-namespace Prime.Migrations
+namespace Issuer.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
     [Migration("20210406181406_InitialMigration")]
@@ -21,7 +21,7 @@ namespace Prime.Migrations
                 .HasAnnotation("ProductVersion", "3.1.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            modelBuilder.Entity("Prime.Models.Credential", b =>
+            modelBuilder.Entity("issuer.Models.Credential", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -69,7 +69,7 @@ namespace Prime.Migrations
                     b.ToTable("Credential");
                 });
 
-            modelBuilder.Entity("Prime.Models.Patient", b =>
+            modelBuilder.Entity("issuer.Models.Patient", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -130,7 +130,7 @@ namespace Prime.Migrations
                     b.ToTable("Patient");
                 });
 
-            modelBuilder.Entity("Prime.Models.PatientCredential", b =>
+            modelBuilder.Entity("issuer.Models.PatientCredential", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -164,15 +164,15 @@ namespace Prime.Migrations
                     b.ToTable("PatientCredential");
                 });
 
-            modelBuilder.Entity("Prime.Models.PatientCredential", b =>
+            modelBuilder.Entity("issuer.Models.PatientCredential", b =>
                 {
-                    b.HasOne("Prime.Models.Credential", "Credential")
+                    b.HasOne("issuer.Models.Credential", "Credential")
                         .WithMany()
                         .HasForeignKey("CredentialId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Prime.Models.Patient", "Patient")
+                    b.HasOne("issuer.Models.Patient", "Patient")
                         .WithMany("PatientCredentials")
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Cascade)

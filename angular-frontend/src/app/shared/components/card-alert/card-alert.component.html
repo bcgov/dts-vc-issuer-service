@@ -1,0 +1,20 @@
+<mat-card class="card-alert">
+  <mat-card-header>
+    <div *ngIf="icon"
+         mat-card-avatar>
+      <mat-icon>{{ icon }}</mat-icon>
+    </div>
+
+    <mat-card-subtitle *ngIf="subtitle">{{ subtitle }}</mat-card-subtitle>
+    <mat-card-title *ngIf="title">{{ title }}</mat-card-title>
+
+
+    <ng-content select="card-menu"></ng-content>
+  </mat-card-header>
+
+  <ng-content select="mat-card-content"></ng-content>
+
+  <mat-card-footer>
+
+  </mat-card-footer>
+</mat-card>

@@ -1,0 +1,21 @@
+@import 'palette';
+
+.mat-card .mat-divider-horizontal {
+  // Override equal margins in expansion to match padding
+  // when expansion button is located above a mat-footer
+  margin-top: 12px;
+}
+
+.mat-list .mat-list-item {
+  h3.mat-line {
+    color: rgba(theme-palette(blue), .8);
+    font-size: .85rem;
+    margin-bottom: -5px;
+  }
+  p.mat-line {
+    color: theme-palette(blue);
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}

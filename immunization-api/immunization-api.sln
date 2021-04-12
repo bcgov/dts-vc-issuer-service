@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.809.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "immunization-api", "immunization-api\immunization-api.csproj", "{FD66138C-0552-4917-93BA-0878DDE7D824}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "immunization-api", "src\immunization-api.csproj", "{FD66138C-0552-4917-93BA-0878DDE7D824}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

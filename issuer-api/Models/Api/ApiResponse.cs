@@ -3,7 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Prime.Models.Api
+namespace Issuer.Models.Api
 {
     public static class ApiResponse
     {
