@@ -1,3 +1,5 @@
+[Version Française](README_fr-ca.md)
+
 # Running the DTS VC Issuer Service
 
 To run the project you will need to open two terminals:

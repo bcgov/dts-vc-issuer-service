@@ -1,12 +1,14 @@
 [![img](https://img.shields.io/badge/Lifecycle-Experimental-339999)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
+---
+[Version Française](README_fr-ca.md)
+
 # DTS Verifiable Credential Issuer Service
 
 Digital Trust Verifiable Credential Issuer Service
 
 ## Repository Structure
-
 - `immunization-api`: contains the .Net Core 5.0 back-end code that defines the business logic for patient immunization information.
 
 - `issuer-api`: contains the .Net Core 3.1 back-end code that defines the business logic for the DTS VC issuer.
