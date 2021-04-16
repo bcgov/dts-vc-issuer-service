@@ -47,7 +47,8 @@
           color="primary"
           [class]="cssClass"
           [disabled]="alertOptions.disableAction"
-          (click)="onAction()">
-    Add to Wallet
+          (click)="onAction()"
+          *transloco="let t">
+          {{ t('addToWalletButtonLabel') }}
   </button>
 </ng-template>

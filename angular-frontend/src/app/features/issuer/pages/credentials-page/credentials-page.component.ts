@@ -11,6 +11,7 @@ import { ImmunizationResource } from '@features/issuer/shared/services/immunizat
 import { IssuerResource } from '@features/issuer/shared/services/issuer-resource.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertOptions } from '@shared/components/card-alert/card-alert.component';
+import { TranslocoService } from '@ngneat/transloco';
 
 @Component({
   selector: 'app-credentials-page',
@@ -32,9 +33,10 @@ export class CredentialsPageComponent implements OnInit {
     private router: Router,
     private immunizationResource: ImmunizationResource,
     private issuerResource: IssuerResource,
-    private authService: AuthService
+    private authService: AuthService,
+    private translocoService: TranslocoService
   ) {
-    this.title = this.route.snapshot.data.title;
+    this.title = '';
     this.immunizationRecords = null;
     this.patient = null;
     this.issuedCredential = null;
@@ -61,7 +63,7 @@ export class CredentialsPageComponent implements OnInit {
       return {
         type: 'warn',
         icon: 'task_alt',
-        message: 'Vaccination record is ready to be saved to your digital wallet',
+        message: this.translocoService.translate('vaccinationRecordReadyToBeSavedInWallet'),
         showAction: true,
         disableAction: true
       };
@@ -69,14 +71,14 @@ export class CredentialsPageComponent implements OnInit {
       return {
         type: 'success',
         icon: 'verified',
-        message: 'Vaccination record exists in your digital wallet',
+        message: this.translocoService.translate('vaccinationRecordExistsInWallet'),
         showAction: false
       };
     } else {
       return {
         type: 'info',
         icon: 'notification_important',
-        message: 'Vaccination record has not been added to your certificate',
+        message: this.translocoService.translate('notAddedToCertificateMessage'),
         showAction: true,
         disableAction: isPending
       };

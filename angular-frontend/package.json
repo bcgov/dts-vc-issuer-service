@@ -24,6 +24,8 @@
     "@angular/platform-browser": "~11.2.8",
     "@angular/platform-browser-dynamic": "~11.2.8",
     "@angular/router": "~11.2.8",
+    "@ngneat/transloco": "^2.20.1",
+    "@ngneat/transloco-locale": "^1.4.0",
     "bootstrap": "^4.6.0",
     "moment": "^2.29.1",
     "ng-busy": "^11.0.0",

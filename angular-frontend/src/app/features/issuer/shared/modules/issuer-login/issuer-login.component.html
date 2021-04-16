@@ -1,4 +1,4 @@
-<div class="wrapper">
+<div class="wrapper" *transloco="let t">
   <div class="container">
 
     <div class="row">
@@ -6,20 +6,16 @@
         <div class="position">
           <mat-icon>qr_code_scanner</mat-icon>
         </div>
-
         <section>
           <h1>
-            Digital Health Certificate
-
+            {{ t('appTitle') }}
             <div>
-              Keep this in your digital wallet
+              {{ t('appSubTitle') }}
             </div>
           </h1>
 
           <p>
-            Your digital health certificate can be used to provide proof of vaccination, test results, or other health
-            data you may need to share to access services, events, or facilities. A digital record protects your
-            personal information so you do not need to share more than is required.
+            {{ t('appDescription') }}
           </p>
         </section>
       </div>
@@ -30,10 +26,10 @@
           <mat-card-content>
 
             <h1>
-              Create or Update Your Digital Health Certificate
+              {{ t('loginTitle') }}
             </h1>
             <p>
-              Log in using your email address and password you used when you booked your vaccine appointment.
+              {{ t('loginInstructions') }}
             </p>
 
             <form (ngSubmit)="onSubmit()"
@@ -46,9 +42,9 @@
                                 color="accent"
                                 class="w-100">
                   <input matInput
-                         placeholder="Email"
+                         [placeholder]="t('emailLabel')"
                          formControlName="email">
-                  <mat-error *ngIf="email.hasError('required')">Required</mat-error>
+                  <mat-error *ngIf="email.hasError('required')">{{ t('requiredValidation') }}</mat-error>
                 </mat-form-field>
               </div>
 
@@ -57,15 +53,15 @@
                                 color="accent"
                                 class="w-100">
                   <input matInput
-                         placeholder="Password"
+                         [placeholder]="t('passwordLabel')"
                          formControlName="password">
-                  <mat-error *ngIf="password.hasError('required')">Required</mat-error>
+                  <mat-error *ngIf="password.hasError('required')">{{ t('requiredValidation') }}</mat-error>
                 </mat-form-field>
               </div>
 
               <button mat-flat-button
                       color="primary"
-                      size="large">Log In</button>
+                      size="large">{{ t('loginButtonLabel') }}</button>
             </form>
 
           </mat-card-content>
@@ -73,8 +69,8 @@
           <mat-card-footer>
 
             <p>
-              By using this digital health certificate, you agree to the <a href="#">Terms of Service</a> and
-              <a href="#">Data Policy</a>.
+              {{ t('agreementMessage') }} <a href="#">{{ t('termOfServiceLabel') }}</a> {{ t('and') }}
+              <a href="#">{{ t('dataPolicyLabel') }}</a>.
             </p>
 
           </mat-card-footer>
