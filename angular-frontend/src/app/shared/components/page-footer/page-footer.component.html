@@ -1,35 +1,35 @@
-<div class="wrapper">
+<div class="wrapper" *transloco="let t">
   <div class="container">
     <div class="row">
       <div class="col-12 col-sm-6 col-md-4">
 
-        <h1>Support</h1>
+        <h1>{{ t('supportLabel') }}</h1>
 
         <ul class="list-unstyled">
-          <li><a href="#">Digital Wallet</a></li>
-          <li><a href="#">Verifiable Credential</a></li>
-          <li><a href="#">Using Trinsic</a></li>
+          <li><a href="#">{{ t('digitalWalletLabel') }}</a></li>
+          <li><a href="#">{{ t('verifiableCredentialLabel') }}</a></li>
+          <li><a href="#">{{ t('usingTrinsicLabel') }}</a></li>
         </ul>
 
       </div>
       <div class="col-12 order-sm-last col-md-4 col-lg-5">
 
-        <h1>Legal</h1>
+        <h1>{{ t('legalLabel') }}</h1>
 
         <ul class="list-unstyled">
-          <li><a href="#">Privacy</a></li>
-          <li><a href="#">Terms</a></li>
+          <li><a href="#">{{ t('privacyLabel') }}</a></li>
+          <li><a href="#">{{ t('termsLabel') }}</a></li>
         </ul>
 
       </div>
       <div class="col-12 col-sm-6 order-md-last col-md-4 col-lg-3">
 
-        <h1>Language</h1>
+        <h1>{{ t('languageLabel') }}</h1>
 
         <mat-form-field appearance="outline">
           <mat-select value="en">
-            <mat-option value="en">English</mat-option>
-            <mat-option value="fr">French</mat-option>
+            <mat-option value="en">{{ t('englishLanguageLabel') }}</mat-option>
+            <mat-option value="fr">{{ t('frenchLanguageLabel') }}</mat-option>
           </mat-select>
         </mat-form-field>
 
@@ -40,7 +40,7 @@
 
         <hr>
 
-        <small>&copy; 2021 Health Status Credential. All rights reserved.</small>
+        <small>&copy; {{ t('footerNote') }}</small>
       </div>
     </div>
   </div>

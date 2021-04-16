@@ -15,6 +15,8 @@ import { PageToolbarComponent } from './components/page-toolbar/page-toolbar.com
 import { PageHeaderComponent } from './components/page-header/page-header.component';
 import { PageHeaderSummaryDirective } from './components/page-header/page-header-summary.directive';
 import { PageFooterComponent } from './components/page-footer/page-footer.component';
+import { TranslocoModule } from '@ngneat/transloco';
+import { TranslocoLocaleModule } from '@ngneat/transloco-locale';
 
 @NgModule({
   declarations: [
@@ -34,7 +36,9 @@ import { PageFooterComponent } from './components/page-footer/page-footer.compon
     RouterModule,
     NgxMaterialModule,
     NgxBusyModule,
-    NgxProgressModule
+    NgxProgressModule,
+    TranslocoModule,
+    TranslocoLocaleModule.init()
   ],
   exports: [
     CommonModule,
