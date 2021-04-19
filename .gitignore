@@ -86,3 +86,4 @@ Temporary Items
 ## Project specific
 **/realm-export-docker.json
 **/.env
+docker/taa_payload.json

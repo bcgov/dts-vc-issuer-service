@@ -6,14 +6,14 @@ set -e
 #
 # Global utility functions - START
 #
-function echoError (){
+function echoRed (){
   _msg=${1}
   _red='\e[31m'
   _nc='\e[0m' # No Color
   echo -e "${_red}${_msg}${_nc}"
 }
 
-function echoWarning (){
+function echoYellow (){
   _msg=${1}
   _yellow='\e[33m'
   _nc='\e[0m' # No Color
@@ -33,8 +33,8 @@ function isInstalled () {
 function isCurlInstalled () {
   CURL_EXE=curl
   if ! isInstalled ${CURL_EXE}; then
-    echoError "The ${CURL_EXE} executable is required and was not found on your path."
-    echoError "If your shell of choice doesn't come with curl preinstalled, try installing it using either [Homebrew](https://brew.sh/) (MAC) or [Chocolatey](https://chocolatey.org/) (Windows)."
+    echoRed "The ${CURL_EXE} executable is required and was not found on your path."
+    echoRed "If your shell of choice doesn't come with curl preinstalled, try installing it using either [Homebrew](https://brew.sh/) (MAC) or [Chocolatey](https://chocolatey.org/) (Windows)."
     exit 1
   fi
 }
@@ -42,9 +42,9 @@ function isCurlInstalled () {
 function isJQInstalled () {
   JQ_EXE=jq
   if ! isInstalled ${JQ_EXE}; then
-    echoError "The ${JQ_EXE} executable is required and was not found on your path."
-    echoError "Installation instructions can be found here: https://stedolan.github.io/jq/download"
-    echoError "Alternatively, a package manager such as Chocolatey (Windows) or Brew (Mac) can be used to install this dependecy."
+    echoRed "The ${JQ_EXE} executable is required and was not found on your path."
+    echoRed "Installation instructions can be found here: https://stedolan.github.io/jq/download"
+    echoRed "Alternatively, a package manager such as Chocolatey (Windows) or Brew (Mac) can be used to install this dependecy."
     exit 1
   fi
 }
@@ -52,17 +52,17 @@ function isJQInstalled () {
 function isNgrokInstalled () {
   NGROK_EXE=ngrok
   if ! isInstalled ${NGROK_EXE}; then
-    echoError "The ${NGROK_EXE} executable is needed and not on your path."
-    echoError "It can be downloaded from here: https://ngrok.com/download"
-    echoError "Alternatively, a package manager such as Chocolatey (Windows) or Brew (Mac) can be used to install this dependecy."
+    echoRed "The ${NGROK_EXE} executable is needed and not on your path."
+    echoRed "It can be downloaded from here: https://ngrok.com/download"
+    echoRed "Alternatively, a package manager such as Chocolatey (Windows) or Brew (Mac) can be used to install this dependecy."
     exit 1
   fi
 }
 
 function checkNgrokTunnelActive () {
   if [ -z "${NGROK_AGENT_ENDPOINT}" ]; then
-    echoError "It appears that ngrok tunneling is not enabled."
-    echoError "Please open another shell in the scripts folder and execute start-ngrok.sh before trying again."
+    echoRed "It appears that ngrok tunneling is not enabled."
+    echoRed "Please open another shell in the scripts folder and execute start-ngrok.sh before trying again."
     exit 1
   fi
 }
@@ -71,10 +71,10 @@ function customizeKeycloakConfig () {
   # Customize realm settings for development environment
   cp -f ./keycloak/config/realm-export.json ./keycloak/config/realm-export-docker.json
   if [ -z "$GITHUB_CLIENT_ID" ] || [ -z "$GITHUB_CLIENT_SECRET" ]; then
-    echoWarning "The client id and/or secret for the integration of GitHub as IDP for Keycloak were not provided."
-    echoWarning "Please set the GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables to use GitHub as your IDP."
-    echoWarning "To get your  client id/secret combination, please visit: https://github.com/settings/developers"
-    echoWarning "Press Ctrl+C now to stop, or wait to proceed without GitHub integration."
+    echoYellow "The client id and/or secret for the integration of GitHub as IDP for Keycloak were not provided."
+    echoYellow "Please set the GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET environment variables to use GitHub as your IDP."
+    echoYellow "To get your  client id/secret combination, please visit: https://github.com/settings/developers"
+    echoYellow "Press Ctrl+C now to stop, or wait to proceed without GitHub integration."
     sleep 8;
   else
     # Preparing Keycloak realm...
@@ -102,6 +102,7 @@ function generateSeed(){
     echo ${_seed}
   )
 }
+
 #
 # Global utility functions - END
 #
@@ -128,6 +129,9 @@ usage() {
       down - Brings down the services and removes the volumes (storage) and containers.
       rm - Same as down
 
+      provision - Only starts the agent and wallet, registers the agent on Sovrin Staging Net and accepts the TAA.
+                  Automatically performed when start detects a first/clean run. 
+
 EOF
   exit 1
 }
@@ -135,6 +139,132 @@ EOF
 # -----------------------------------------------------------------------------------------------------------------
 # Functions:
 # -----------------------------------------------------------------------------------------------------------------
+pingAgent(){
+  port=${1}
+
+  # ping agent using a backchannel-exposed api
+  rtnCd=$(${CURL_EXE} -s --write-out '%{http_code}' --output /dev/null http://localhost:${port}/api/doc)
+  if (( ${rtnCd} == 200 )); then
+    return 0
+  else
+    return 1
+  fi
+}
+
+waitForAgent(){
+  (
+    # Wait for agent to start ...
+    local startTime=${SECONDS}
+    printf "Waiting for agent to start"
+    while ! pingAgent ${@}; do
+      printf "."
+      local duration=$(($SECONDS - $startTime))
+      if (( ${duration} >= ${AGENT_TIMEOUT} )); then
+        echoRed "\nThe agent failed to start within ${duration} seconds.\n"
+        exit 1
+      fi
+      sleep 1
+    done
+  )
+}
+
+registerSovrin() {
+  did=${1}
+  verkey=${2}
+  ledger=${3:-"stagingnet"}
+  
+  if [ -z "${did}" ] || [ -z "${verkey}" ]|| [ -z "${ledger}" ]; then
+    echoRed "\nresgisterSovrin; You MUST specify the following parameters:\n- did\n- verkey"
+    exit 1
+  fi
+    
+  echo -e "Registering agent on ${ledger} using DID:${AGENT_PUBLIC_DID}, Verkey: ${AGENT_VERKEY}...\n"
+
+  # We need to pre-create the curl command, otherwise the execution could fail
+  regCmd=$(echo "${CURL_EXE} \
+      -s \
+      -X POST \
+      -H \"Content-Type: application/json charset=utf-8\" \
+      -d \"{\\\"network\\\":\\\"${ledger}\\\",\\\"did\\\":\\\"${did}\\\",\\\"verkey\\\":\\\"${verkey}\\\",\\\"paymentaddr\\\":\\\"\\\"}\" \
+      \"https://selfserve.sovrin.org/nym\"")
+  REGISTER_DID_RESULT=$(eval ${regCmd})
+
+  if [[ ! "200" == $(echo $REGISTER_DID_RESULT | ${JQ_EXE} -r '.statusCode') ]]; then
+    echoRed "The agent registration failed with the following message: ${REGISTER_DID_RESULT}"
+    docker-compose stop
+    rm ".env"
+    exit 1
+  fi
+}
+
+generateTaaPayload() {
+  ${CURL_EXE} \
+      -s \
+      -X GET \
+      -H "X-Api-Key:${AGENT_ADMIN_API_KEY}" \
+      "http://localhost:${AGENT_ADMIN_PORT}/ledger/taa" \
+  | ${JQ_EXE} '{ "mechanism":"at_submission", "version": "\(.result.taa_record.version)", "text": "\(.result.taa_record.text)" }' \
+  > taa_payload.json
+}
+
+acceptTAA() {
+  generateTaaPayload
+
+  TAA_ACCEPT_RESULT=$(${CURL_EXE} \
+      -s \
+      -X POST \
+      -H "X-Api-Key:${AGENT_ADMIN_API_KEY}" \
+      -H "Content-Type: application/json charset=utf-8" \
+      -d @taa_payload.json \
+      "http://localhost:${AGENT_ADMIN_PORT}/ledger/taa/accept")
+
+  if [[ "${TAA_ACCEPT_RESULT}" == "{}" ]]; then
+    echo -e "TAA accepted successfully \n"
+    rm ./taa_payload.json
+  else
+    echoRed "Failed to accept TAA: ${TAA_ACCEPT_RESULT}"
+    exit 1
+  fi
+}
+
+provisionAgent(){
+    if [[ ! -f ".env" ]]; then
+      AGENT_WALLET_SEED=$(generateSeed dts-vc-issuer-demo)
+      echo "Generated AGENT_WALLET_SEED=${AGENT_WALLET_SEED}"
+      echo "AGENT_WALLET_SEED=${AGENT_WALLET_SEED}" > .env
+    fi
+
+    echo -e "\nStarting agent in read-only mode...\n"
+    export AGENT_READ_ONLY_MODE="true"
+    configureEnvironment "$@"
+    docker-compose --env-file .env up -d wallet agent
+    
+    echo
+    waitForAgent ${AGENT_ADMIN_PORT}
+
+    echo -e "\nRetrieving agent configuration..."
+    AGENT_PUBLIC_INFO=$(${CURL_EXE} \
+                      -s \
+                      -X GET \
+                      -H  "accept: application/json" \
+                      -H  "X-Api-Key: $AGENT_ADMIN_API_KEY"\
+                      "http://localhost:${AGENT_ADMIN_PORT}/wallet/did/public")
+    AGENT_PUBLIC_DID=$(echo $AGENT_PUBLIC_INFO | ${JQ_EXE} '.result.did')
+    AGENT_VERKEY=$(echo $AGENT_PUBLIC_INFO | ${JQ_EXE} '.result.verkey')
+    echo "AGENT_PUBLIC_DID=${AGENT_PUBLIC_DID}" >> .env
+    echo "AGENT_VERKEY=${AGENT_VERKEY}" >> .env
+
+    echo
+    registerSovrin $AGENT_PUBLIC_DID $AGENT_VERKEY
+
+    echo -e "Agent registered successfully, accepting TAA...\n"
+    acceptTAA
+
+    unset AGENT_READ_ONLY_MODE
+    echo
+    echo -e "Agent provisioning completed, ready for startup\n"
+}
+
 build() {
   echo -e "\nBuilding dts-vc-issuer-api development image..."
   docker build \
@@ -180,9 +310,10 @@ configureEnvironment() {
   # Global
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-"dts-vc-issuer"}"
   export DEBUG=${DEBUG}
-  export LOG_LEVEL=${LOG_LEVEL:-"DEBUG"}
-  export LEDGER_URL=${LEDGER_URL:-"http://test.bcovrin.vonx.io"}
+  export LOG_LEVEL=${LOG_LEVEL:-"WARN"}
+  export LEDGER_URL=${LEDGER_URL:-"https://raw.githubusercontent.com/sovrin-foundation/sovrin/stable/sovrin/pool_transactions_sandbox_genesis"}
   export TAILS_SERVER_URL=${TAILS_SERVER_URL:-"https://tails-dev.vonx.io"}
+  export AGENT_TIMEOUT=30
 
   # frontend
   export FRONTEND_WEB_PORT=4200
@@ -229,6 +360,7 @@ configureEnvironment() {
   if [ ! -z "${AGENT_ADMIN_API_KEY}" ]; then
     AGENT_ADMIN_MODE="admin-api-key ${AGENT_ADMIN_API_KEY}"
   fi
+  export AGENT_READ_ONLY_MODE=${AGENT_READ_ONLY_MODE:-"false"}
 
   # issuer api
   export ISSUER_DATABASE_NAME="dts_issuer_db"
@@ -306,7 +438,7 @@ toLower() {
   echo $(echo ${@} | tr '[:upper:]' '[:lower:]')
 }
 
-echoError (){
+echoRed (){
   _msg=${1}
   _red='\033[0;31m'
   _nc='\033[0m' # No Color
@@ -340,26 +472,35 @@ case "${COMMAND}" in
     configureEnvironment $@
     build ${_startupParams}
     ;;
+  provision)
+    isJQInstalled
+    isCurlInstalled
+
+    provisionAgent
+  ;;
   start|start|up)
     isJQInstalled
     isCurlInstalled
 
-    if [[ ! -f ".env" ]]; then
-      AGENT_WALLET_SEED=$(generateSeed dts-vc-issuer-demo)
-      echo "Generated AGENT_WALLET_SEED=${AGENT_WALLET_SEED}"
-      echo "AGENT_WALLET_SEED=${AGENT_WALLET_SEED}" > .env
-    fi
-
     if [ -z "$NGROK_AGENT_ENDPOINT" ]; then
       isNgrokInstalled
-      export NGROK_AGENT_ENDPOINT=$(${CURL_EXE} http://localhost:4040/api/tunnels | ${JQ_EXE} --raw-output '.tunnels | map(select(.name | contains("issuer-agent"))) | .[0] | .public_url')
+      export NGROK_AGENT_ENDPOINT=$(${CURL_EXE} \
+            -s \
+            -X GET \
+            "http://localhost:4040/api/tunnels" \
+            | ${JQ_EXE} -r '.tunnels | map(select(.name | contains("issuer-agent"))) | .[0] | .public_url')
     fi
 
     checkNgrokTunnelActive
     echo "The agent endpoint is: ${NGROK_AGENT_ENDPOINT}"
 
+    if [[ ! -f ".env" ]]; then
+      echo "First/clean start detected, provisioning agent on Sovrin StagingNet..." 
+      provisionAgent
+    fi
+
     configureEnvironment "$@"
-    customizeKeycloakConfig
+    # customizeKeycloakConfig
     docker-compose --env-file .env up -d ${_startupParams}
     docker-compose logs -f
     ;;
@@ -370,6 +511,9 @@ case "${COMMAND}" in
   rm|down)
     if [ -f ".env" ] ; then
         rm ".env"
+    fi
+    if [ -f "taa_payload.json" ] ; then
+        rm "taa_payload.json"
     fi
     configureEnvironment
     deleteVolumes
