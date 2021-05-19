@@ -7,7 +7,7 @@ services:
     image: dts-vc-issuer-api-dev
     environment:
       APP: "dev"
-      DB_CONNECTION_STRING: "Host=db;Port=${DATABASE_PORT};Database=${ISSUER_DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD};"
+      DB_CONNECTION_STRING: "Host=db;Port=5432;Database=${ISSUER_DATABASE_NAME};Username=${DATABASE_USER};Password=${DATABASE_PASSWORD};"
       ISSUER_AGENT_ADMIN_API_KEY: ${AGENT_ADMIN_API_KEY}
       ISSUER_AGENT_ADMIN_API_URL: ${ISSUER_AGENT_ADMIN_URL}
     ports:
@@ -62,7 +62,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: default
     ports:
-      - ${DATABASE_PORT}:5432
+      - ${EXPOSED_DATABASE_PORT}:5432
     networks:
       - dts-vc-issuer
     volumes:
@@ -133,7 +133,7 @@ services:
       ACAPY_WALLET_STORAGE_TYPE: ${AGENT_WALLET_STORAGE_TYPE}
       ACAPY_AUTO_PROVISION: "true"
       ACAPY_WEBHOOK_URL: ${AGENT_WEBHOOK_URL}
-      ACAPY_LOG_LEVEL: ${AGENT_LOG_LEVEL}
+      ACAPY_LOG_LEVEL: ${LOG_LEVEL}
       ACAPY_AUTO_ACCEPT_INVITES: "true"
       ACAPY_AUTO_ACCEPT_REQUESTS: "true"
       ACAPY_AUTO_PING_CONNECTION: "true"
