@@ -1,40 +1,30 @@
 import React, { useState, useEffect }       from 'react'
-import { Container, Button, Col, Spinner }  from 'reactstrap'
-import { useTranslation } 					from 'react-i18next' 
+import { Container,  Col }                  from 'reactstrap'
 import QRProofComponent                     from '../components/QRProofComponent'
 import { GET_API_SECRET }                   from '../../config/constants'
 import { fetchWithTimeout }                 from '../../helpers/fetchWithTimeout'
-import { GET_SCHEMA_NAME }                  from '../../config/constants'
-import { GET_SCHEMA_VERSION }               from '../../config/constants'
 import                                           '../../assets/styles/LoginContainer.css'
 
 
 function QRVerificationContainer(props){
 
-	const { t } = useTranslation(['translation', 'vaccine']); 
+	const [presentation_exchange_id, setPresentationExchangeId] = useState(props.location.state.invitation.presentation_exchange_id)
 
 	let INTERVAL    = 5000; 
 	let TIMEOUT     = 3000; 
-	let schemaName = "vaccine"; 
-	let version ="1.2";
 
     useEffect(() => {
         getConnectionInfo()
     }, []);
 
-    function getConnectionInfo() {
-		
+	function getConnectionInfo() {
 		try {
-			fetchWithTimeout(`/connections/${props.location.state.invitation.connection_id}`,
+			fetchWithTimeout(`/present-proof/records/${presentation_exchange_id}`,
 				{
-					method : 'GET',
+					method: 'GET',
 					headers: {
-                        'X-API-Key': 'cqen-api-test',
-						'Content-Type' : 'application/json; charset=utf-8',
-						'Access-Control-Allow-Origin': '*',
-						'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-						'Access-Control-Allow-Headers': 'Content-Type',
-						'Access-Control-Max-Age': '86400'
+						'X-API-Key': `${GET_API_SECRET()}`,
+						'Content-Type': 'application/json; charset=utf-8',
 					}
 				}, TIMEOUT).then((
 					resp => {
@@ -42,7 +32,19 @@ function QRVerificationContainer(props){
 							resp.json().then((data => {
 								if (data.state) {
 									let intervalFunction;
-									data.state === "invitation" ? intervalFunction = setTimeout(getConnectionInfo, INTERVAL) : clearIntervalFunction(intervalFunction);
+									if (data.state === "request_sent") {
+										intervalFunction = setTimeout(getConnectionInfo, INTERVAL);
+									} else {
+										props.history.push('/proofDisplay', {
+											connection_id                               : props.location.state.connection_id,
+											ticket                                      : props.location.state.ticket,
+											vaccine: {
+												recipient_fullName                      : data.presentation.requested_proof.revealed_attrs.recipient_fullName.raw,
+												recipient_birthDate                     : data.presentation.requested_proof.revealed_attrs.recipient_birthDate.raw,
+												vaccine_dateOfVaccination               : data.presentation.requested_proof.revealed_attrs.vaccine_dateOfVaccination.raw,
+											}
+										});
+									}
 								} else {
 									setTimeout(getConnectionInfo, INTERVAL)
 								}
@@ -56,70 +58,9 @@ function QRVerificationContainer(props){
 			console.log(error);
 			setTimeout(getConnectionInfo, INTERVAL)
 		}
-    }
-    
-    function clearIntervalFunction(intervalFunction) {
-		clearInterval(intervalFunction);
-		requestProof()
-    }
-    
-
-    function requestProof(){
-		fetch(`/present-proof/send-request`, 
-			{
-				method : 'POST', 
-				headers: {
-					'X-API-Key': 'cqen-api-test',
-					'Content-Type' : 'application/json; charset=utf-8',
-					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-					'Access-Control-Allow-Headers': 'Content-Type',
-					'Access-Control-Max-Age': '86400'
-				},
-				body: JSON.stringify( 
-				{
-					"connection_id" : `${props.location.state.invitation.connection_id}`,
-					"trace" : "true", 
-					"comment" : "Vaccination proof validation", 
-					"proof_request" : {
-						"name"    : "vaccine", 
-						"version" : "1.2", 
-						"requested_attributes" : {
-
-							"recipient_birthDate": {
-								"name": "recipient_birthDate",
-								"restrictions": [
-									{"schema_name": schemaName,
-                        			"schema_version": version}
-								]
-							},
-							"recipient_fullName": {
-								"name": "recipient_fullName",
-								"restrictions": [
-									{"schema_name": schemaName,
-                        			"schema_version": version}
-								]
-							}, 
-							"vaccine_dateOfVaccination": {
-								"name": "vaccine_dateOfVaccination",
-								"restrictions": [
-									{"schema_name": schemaName,
-                        			"schema_version": version}
-								]
-							}, 
-						}, 
-						"requested_predicates" : {}
-					}
-				}
-				)}).then(response => response.json())
-					.then(data => {
-						props.history.push('/proofResult', {
-							presentation_exchange_id: data.presentation_exchange_id,
-							connection_id           : props.location.state.invitation.connection_id,
-						}
-                    );
-				});
 	}
+
+    
     
     return(
         <div className="Root" style={{ backgroundColor: '#FCF8F7', display: "flex" }}>
