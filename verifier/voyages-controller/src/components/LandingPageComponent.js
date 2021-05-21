@@ -9,9 +9,9 @@ import                         '../assets/styles/JumbotronComponent.css';
 const LandingPageComponent = () => {
   const history = useHistory();
   const { t } = useTranslation(['translation','vaccine']);
-
+  
   function createInvitation(){
-    fetch('/connections/create-invitation',{
+    fetch('/create-connectionless-proof-request',{ 
         method: 'POST',
         headers: {
             'Content-Type'                 : 'application/json; charset=utf-8',
